@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeTrack - DSA Progress Tracker</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f5f7;
+            color: #222;
+        }
+
+        header {
+            background: #222;
+            color: white;
+            padding: 22px;
+        }
+
+        header h1 {
+            margin-bottom: 6px;
+        }
+
+        header p {
+            color: #ccc;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 20px auto;
+            padding: 0 15px;
+        }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat, .panel {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .stat span {
+            display: block;
+            color: #777;
+            font-size: 13px;
+            margin-bottom: 5px;
+        }
+
+        .stat b {
+            font-size: 22px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #ddd;
+            border-radius: 20px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0;
+            background: #4caf50;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 18px;
+        }
+
+        .panel h2 {
+            font-size: 18px;
+            margin-bottom: 12px;
+        }
+
+        .day-search, .custom-plan input, .custom-plan select {
+            width: 100%;
+            padding: 9px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+
+        .day-list {
+            max-height: 560px;
+            overflow-y: auto;
+        }
+
+        .day-button {
+            width: 100%;
+            text-align: left;
+            background: #fafafa;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 7px;
+            margin-bottom: 7px;
+            cursor: pointer;
+        }
+
+        .day-button:hover, .day-button.active {
+            background: #e8e8e8;
+        }
+
+        .day-button b {
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .day-button small {
+            color: #777;
+        }
+
+        .custom-plan {
+            margin-top: 18px;
+            padding-top: 18px;
+            border-top: 1px solid #ddd;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        .custom-plan button, .add-day-button {
+            width: 100%;
+            padding: 9px;
+            border: 0;
+            border-radius: 6px;
+            background: #222;
+            color: white;
+        }
+
+        .selected-day {
+            margin-bottom: 15px;
+        }
+
+        .selected-day-info {
+            color: #777;
+            font-size: 13px;
+        }
+
+        .problem-sources {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 15px 0;
+        }
+
+        .source-box {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .source-box h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .problem-option {
+            display: block;
+            margin: 8px 0;
+            font-size: 13px;
+        }
+
+        .kanban-title {
+            margin: 20px 0 10px;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .kanban-column {
+            background: #e8e9ec;
+            border-radius: 9px;
+            padding: 12px;
+            min-height: 280px;
+        }
+
+        .kanban-column h3 {
+            font-size: 15px;
+            margin-bottom: 10px;
+        }
+
+        .task-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 11px;
+            margin-bottom: 8px;
+            cursor: grab;
+        }
+
+        .task-card h4 {
+            font-size: 13px;
+            margin-bottom: 5px;
+        }
+
+        .task-card small {
+            color: #777;
+        }
+
+        .task-buttons {
+            display: flex;
+            gap: 5px;
+            margin-top: 9px;
+        }
+
+        .task-buttons button {
+            border: 0;
+            background: #eee;
+            padding: 5px 8px;
+            border-radius: 5px;
+            font-size: 11px;
+        }
+
+        .empty {
+            text-align: center;
+            color: #888;
+            font-size: 13px;
+            padding: 20px 5px;
+        }
+
+        @media (max-width: 850px) {
+            .layout, .board {
+                grid-template-columns: 1fr;
+            }
+
+            .day-list {
+                max-height: 350px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .summary, .problem-sources {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+        <header>
+            <h1>CodeTrack</h1>
+            <p>DSA Progress & Preparation Tracker</p>
+        </header>
+
+        <div class="container">
+            <div class="summary">
+                <div class="stat">
+                    <span>Problems in Board</span>
+                    <b id="totalProblems">0</b>
+                </div>
+
+                <div class="stat">
+                    <span>Completed</span>
+                    <b id="completedProblems">0</b>
+                </div>
+
+                <div class="stat">
+                    <span>Overall Progress</span>
+                    <b id="progressText">0%</b>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="layout">
+
+                <aside class="panel">
+                    <h2>Day Wise Plan</h2>
+                    <input
+                        type="text"
+                        id="daySearch"
+                        class="day-search"
+                        placeholder="Search day or topic..."
+                    >
+                    <div id="dayList" class="day-list"></div>
+
+                    <div class="custom-plan">
+                        <h2>Add Custom Task</h2>
+
+                        <input
+                            type="text"
+                            id="customTitle"
+                            placeholder="Task / problem name"
+                        >
+
+                        <select id="customCategory">
+                            <option value="DSA">DSA</option>
+                            <option value="Project">Project</option>
+                            <option value="College">College</option>
+                            <option value="Other">Other</option>
+                        </select>
+
+                        <button id="addCustomButton">Add to To Do</button>
+                    </div>
+                </aside>
+
+                <main>
+
+                    <section class="panel selected-day">
+                        <h2 id="selectedDayTitle">Day 1</h2>
+                        <p id="selectedDayInfo" class="selected-day-info"></p>
+
+                        <div class="problem-sources">
+                            <div class="source-box">
+                                <h3>Striver / Core Problems</h3>
+                                <div id="striverProblems"></div>
+                            </div>
+
+                            <div class="source-box">
+                                <h3>Similar LeetCode Problems</h3>
+                                <div id="leetcodeProblems"></div>
+                            </div>
+                        </div>
+
+                        <button id="addDayButton" class="add-day-button">
+                            Add Selected Problems to Kanban
+                        </button>
+                    </section>
+
+                    <h2 class="kanban-title">My Kanban Board</h2>
+
+                    <div class="board">
+
+                        <div class="kanban-column" id="todoColumn">
+                            <h3>📚 To Do</h3>
+                            <div></div>
+                        </div>
+
+                        <div class="kanban-column" id="progressColumn">
+                            <h3>⏳ In Progress</h3>
+                            <div></div>
+                        </div>
+
+                        <div class="kanban-column" id="doneColumn">
+                            <h3>✅ Done</h3>
+                            <div></div>
+                        </div>
+
+                    </div>
+                </main>
+            </div>
+        </div>
+
+    <script>
+        // -------------------- DSA PLAN --------------------
+        const dsaPlan = [
+        { day: 1, topic: 'Arrays', focus: 'Basics', striver: ['Largest Element in Array', 'Second Largest Element', 'Check if Array Is Sorted'], leetcode: ['Find Common Elements Between Two Arrays'] },
+        { day: 2, topic: 'Arrays', focus: 'Basic array problems', striver: ['Remove Duplicates from Sorted Array', 'Move Zeroes', 'Missing Number'], leetcode: ['Contains Duplicate'] },
+        { day: 3, topic: 'Arrays', focus: 'Two pointer', striver: ['Two Sum', 'Sort an Array of 0s, 1s and 2s'], leetcode: ['Two Sum', 'Squares of a Sorted Array'] },
+        { day: 4, topic: 'Arrays', focus: "Kadane's Algorithm", striver: ['Maximum Subarray', 'Best Time to Buy and Sell Stock'], leetcode: ['Maximum Subarray'] },
+        { day: 5, topic: 'Arrays', focus: 'Rearrangement', striver: ['Rearrange Array Elements by Sign', 'Next Permutation'], leetcode: ['Next Permutation'] },
+        { day: 6, topic: 'Arrays', focus: 'Matrix', striver: ['Set Matrix Zeroes', 'Rotate Matrix', 'Spiral Matrix'], leetcode: ['Rotate Image', 'Spiral Matrix'] },
+        { day: 7, topic: 'Arrays', focus: 'Revision', striver: ['Majority Element', 'Majority Element II', 'Longest Consecutive Sequence'], leetcode: ['Majority Element', 'Longest Consecutive Sequence'] },
+        { day: 8, topic: 'Arrays', focus: 'Subarrays', striver: ['Longest Subarray with Sum K', 'Count Subarrays with Given Sum'], leetcode: ['Subarray Sum Equals K'] },
+        { day: 9, topic: 'Arrays', focus: 'Intervals', striver: ['Merge Overlapping Intervals', 'Merge Two Sorted Arrays'], leetcode: ['Merge Intervals', 'Merge Sorted Array'] },
+        { day: 10, topic: 'Arrays', focus: 'Harder array problems', striver: ['4-Sum', 'Count Inversions', 'Reverse Pairs'], leetcode: ['3Sum', '4Sum'] },
+        { day: 11, topic: 'Binary Search', focus: 'Basics', striver: ['Binary Search', 'Lower Bound', 'Upper Bound'], leetcode: ['Binary Search', 'Search Insert Position'] },
+        { day: 12, topic: 'Binary Search', focus: 'First and last occurrence', striver: ['First and Last Occurrence', 'Count Occurrences'], leetcode: ['Find First and Last Position of Element'] },
+        { day: 13, topic: 'Binary Search', focus: 'Rotated array', striver: ['Search in Rotated Sorted Array', 'Minimum in Rotated Sorted Array'], leetcode: ['Search in Rotated Sorted Array', 'Find Minimum in Rotated Sorted Array'] },
+        { day: 14, topic: 'Binary Search', focus: 'Peak and single element', striver: ['Find Peak Element', 'Single Element in a Sorted Array'], leetcode: ['Find Peak Element', 'Single Element in a Sorted Array'] },
+        { day: 15, topic: 'Binary Search', focus: 'Binary search on answer', striver: ['Square Root of a Number', 'Nth Root of M'], leetcode: ['Sqrt(x)', 'Koko Eating Bananas'] },
+        { day: 16, topic: 'Binary Search', focus: 'More practice', striver: ['Capacity to Ship Packages', 'Minimum Days to Make Bouquets', 'Aggressive Cows'], leetcode: ['Capacity To Ship Packages Within D Days'] },
+        { day: 17, topic: 'Binary Search', focus: 'Advanced', striver: ['Median of Two Sorted Arrays', 'Search in 2D Matrix'], leetcode: ['Median of Two Sorted Arrays', 'Search a 2D Matrix'] },
+        { day: 18, topic: 'Strings', focus: 'Basics', striver: ['Reverse Words in a String', 'Valid Palindrome', 'Longest Common Prefix'], leetcode: ['Reverse Words in a String', 'Valid Palindrome'] },
+        { day: 19, topic: 'Strings', focus: 'Anagrams', striver: ['Valid Anagram', 'Group Anagrams'], leetcode: ['Valid Anagram', 'Group Anagrams'] },
+        { day: 20, topic: 'Strings', focus: 'Revision', striver: ['Roman to Integer', 'Longest Palindromic Substring'], leetcode: ['Roman to Integer', 'Longest Palindromic Substring'] },
+        { day: 21, topic: 'Linked List', focus: 'Basics', striver: ['Middle of Linked List', 'Delete Node in a Linked List'], leetcode: ['Design Linked List', 'Middle of the Linked List'] },
+        { day: 22, topic: 'Linked List', focus: 'Reverse', striver: ['Reverse Linked List', 'Palindrome Linked List'], leetcode: ['Reverse Linked List', 'Palindrome Linked List'] },
+        { day: 23, topic: 'Linked List', focus: 'Cycle', striver: ['Linked List Cycle', 'Starting Point of Cycle'], leetcode: ['Linked List Cycle II'] },
+        { day: 24, topic: 'Linked List', focus: 'Merge', striver: ['Merge Two Sorted Lists', 'Sort a Linked List', 'Intersection of Two Linked Lists'], leetcode: ['Merge Two Sorted Lists', 'Intersection of Two Linked Lists'] },
+        { day: 25, topic: 'Linked List', focus: 'More practice', striver: ['Add Two Numbers', 'Odd Even Linked List'], leetcode: ['Add Two Numbers', 'Odd Even Linked List'] },
+        { day: 26, topic: 'Linked List', focus: 'Advanced', striver: ['Reverse Nodes in K-Group', 'Rotate Linked List', 'Remove Nth Node from End'], leetcode: ['Reverse Nodes in k-Group', 'Rotate List', 'Remove Nth Node From End of List'] },
+        { day: 27, topic: 'Linked List', focus: 'Random pointer', striver: ['Copy List with Random Pointer'], leetcode: ['Copy List with Random Pointer'] },
+        { day: 28, topic: 'Stack & Queue', focus: 'Basics', striver: ['Implement Stack', 'Implement Queue', 'Stack Using Queues', 'Queue Using Stacks'], leetcode: ['Implement Queue using Stacks'] },
+        { day: 29, topic: 'Stack & Queue', focus: 'Parentheses', striver: ['Valid Parentheses', 'Min Stack'], leetcode: ['Valid Parentheses', 'Min Stack'] },
+        { day: 30, topic: 'Stack & Queue', focus: 'Next greater element', striver: ['Next Greater Element', 'Next Smaller Element', 'Stock Span'], leetcode: ['Next Greater Element I', 'Daily Temperatures'] },
+        { day: 31, topic: 'Stack & Queue', focus: 'Histogram', striver: ['Largest Rectangle in Histogram', 'Maximal Rectangle'], leetcode: ['Largest Rectangle in Histogram', 'Maximal Rectangle'] },
+        { day: 32, topic: 'Stack & Queue', focus: 'Sliding window', striver: ['Sliding Window Maximum', 'Trapping Rain Water'], leetcode: ['Sliding Window Maximum', 'Trapping Rain Water'] },
+        { day: 33, topic: 'Recursion', focus: 'Subsequences', striver: ['Generate Subsequences', 'Subset Sum'], leetcode: ['Subsets', 'Subset Sum'] },
+        { day: 34, topic: 'Recursion', focus: 'Combinations', striver: ['Combination Sum', 'Combination Sum II'], leetcode: ['Combination Sum', 'Combination Sum II'] },
+        { day: 35, topic: 'Backtracking', focus: 'Permutations', striver: ['Permutations', 'N-Queens'], leetcode: ['Permutations', 'N-Queens'] },
+        { day: 36, topic: 'Backtracking', focus: 'Search problems', striver: ['Sudoku Solver', 'Rat in a Maze'], leetcode: ['Sudoku Solver', 'Word Search'] },
+        { day: 37, topic: 'Binary Trees', focus: 'Traversals', striver: ['Preorder Traversal', 'Inorder Traversal', 'Postorder Traversal'], leetcode: ['Binary Tree Preorder Traversal', 'Binary Tree Inorder Traversal'] },
+        { day: 38, topic: 'Binary Trees', focus: 'Level order and depth', striver: ['Level Order Traversal', 'Maximum Depth', 'Balanced Binary Tree'], leetcode: ['Binary Tree Level Order Traversal', 'Maximum Depth of Binary Tree'] },
+        { day: 39, topic: 'Binary Trees', focus: 'Diameter and path', striver: ['Diameter of Binary Tree', 'Maximum Path Sum', 'Check Symmetric Tree'], leetcode: ['Diameter of Binary Tree', 'Binary Tree Maximum Path Sum'] },
+        { day: 40, topic: 'Binary Trees', focus: 'Views', striver: ['Right View', 'Top View', 'Bottom View'], leetcode: ['Binary Tree Right Side View'] },
+        ];
+        // -------------------- APPLICATION STATE --------------------
+        let selectedDay = 1;
+        let board = JSON.parse(localStorage.getItem("codeTrack")) || [];
+
+        // -------------------- SELECT DAY --------------------
+        function selectDay(dayNumber) {
+            selectedDay = dayNumber;
+
+            const day = dsaPlan[dayNumber - 1];
+
+            document.getElementById("selectedDayTitle").textContent =
+                `Day ${day.day}: ${day.topic}`;
+
+            document.getElementById("selectedDayInfo").textContent =
+                `Focus: ${day.focus}`;
+
+            showProblems("striverProblems", day.striver, "Striver");
+            showProblems("leetcodeProblems", day.leetcode, "LeetCode");
+
+            renderDays();
+        }
+        // Display problems for the selected day
+        function showProblems(elementId, problems, source) {
+            const box = document.getElementById(elementId);
+            box.innerHTML = "";
+
+            problems.forEach((problem, index) => {
+                box.innerHTML += `
+                    <label class="problem-option">
+                        <input
+                            type="checkbox"
+                            data-source="${source}"
+                            data-index="${index}"
+                        >
+                        ${problem}
+                    </label>
+                `;
+            });
+        }
+
+        // -------------------- DAY LIST + SEARCH --------------------
+        function renderDays() {
+            const list = document.getElementById("dayList");
+            const search = document.getElementById("daySearch").value.toLowerCase();
+
+            list.innerHTML = "";
+
+            dsaPlan.forEach(day => {
+                const text = `day ${day.day} ${day.topic} ${day.focus}`.toLowerCase();
+
+                if (!text.includes(search)) return;
+
+                const dayTasks = board.filter(task => task.day === day.day);
+                const completed = dayTasks.filter(task => task.status === "done").length;
+
+                const button = document.createElement("button");
+                button.className = "day-button";
+
+                if (day.day === selectedDay) {
+                    button.classList.add("active");
+                }
+
+                button.innerHTML = `
+                    <b>Day ${day.day} - ${day.topic}</b>
+                    <small>${day.focus} · ${completed}/${dayTasks.length} completed</small>
+                `;
+
+                button.addEventListener("click", () => selectDay(day.day));
+                list.appendChild(button);
+            });
+        }
+
+        // -------------------- ADD DAY PROBLEMS --------------------
+        function addSelectedDay() {
+            const day = dsaPlan[selectedDay - 1];
+
+            const checked = document.querySelectorAll(
+                ".problem-option input:checked"
+            );
+
+            let problems = [];
+            // Add only selected problems
+            if (checked.length > 0) {
+                checked.forEach(box => {
+                    const source = box.dataset.source;
+                    const index = box.dataset.index;
+
+                    const problemList =
+                        source === "Striver" ? day.striver : day.leetcode;
+
+                    problems.push({
+                        title: problemList[index],
+                        source: source
+                    });
+                });
+            }
+            // If nothing is selected, add all problems
+            else {
+                problems = [
+                    ...day.striver.map(problem => ({
+                        title: problem,
+                        source: "Striver"
+                    })),
+                    ...day.leetcode.map(problem => ({
+                        title: problem,
+                        source: "LeetCode"
+                    }))
+                ];
+            }
+
+            problems.forEach(problem => {
+                const exists = board.some(task =>
+                    task.day === day.day &&
+                    task.title === problem.title
+                );
+
+                if (!exists) {
+                    board.push({
+                        id: Date.now() + Math.random(),
+                        title: problem.title,
+                        topic: day.topic,
+                        day: day.day,
+                        source: problem.source,
+                        status: "todo"
+                    });
+                }
+            });
+
+            document
+                .querySelectorAll(".problem-option input")
+                .forEach(box => box.checked = false);
+
+            saveBoard();
+        }
+
+        // -------------------- CUSTOM TASK --------------------
+        function addCustomTask() {
+            const input = document.getElementById("customTitle");
+            const category = document.getElementById("customCategory").value;
+            const title = input.value.trim();
+
+            if (!title) {
+                alert("Please enter a task name.");
+                return;
+            }
+
+            board.push({
+                id: Date.now() + Math.random(),
+                title: title,
+                topic: category,
+                day: "Custom",
+                source: "Custom",
+                status: "todo"
+            });
+
+            input.value = "";
+            saveBoard();
+        }
+
+        // -------------------- LOCAL STORAGE --------------------
+        function saveBoard() {
+            localStorage.setItem("codeTrack", JSON.stringify(board));
+            renderBoard();
+        }
+
+        // -------------------- KANBAN BOARD --------------------
+        function renderBoard() {
+            const columns = {
+                todo: document.querySelector("#todoColumn > div"),
+                progress: document.querySelector("#progressColumn > div"),
+                done: document.querySelector("#doneColumn > div")
+            };
+
+            Object.values(columns).forEach(column => {
+                column.innerHTML = "";
+            });
+            if (board.length === 0) {
+                columns.todo.innerHTML =
+                    '<p class="empty">Add problems from a day to start.</p>';
+            }
+            board.forEach(task => {
+                const card = document.createElement("div");
+
+                card.className = "task-card";
+                card.draggable = true;
+                card.dataset.id = task.id;
+
+                card.innerHTML = `
+                    <h4>${task.title}</h4>
+                    <small>${task.topic} · Day ${task.day} · ${task.source}</small>
+
+                    <div class="task-buttons">
+                        <button onclick="moveTask(${task.id})">Move</button>
+                        <button onclick="removeTask(${task.id})">Remove</button>
+                    </div>
+                `;
+
+                card.addEventListener("dragstart", event => {
+                    event.dataTransfer.setData("id", task.id);
+                });
+
+                columns[task.status].appendChild(card);
+            });
+
+            updateProgress();
+            renderDays();
+        }
+        // Move button: To Do -> In Progress -> Done -> To Do
+        function moveTask(id) {
+            const task = board.find(task => task.id == id);
+
+            if (!task) return;
+
+            if (task.status === "todo") {
+                task.status = "progress";
+            } else if (task.status === "progress") {
+                task.status = "done";
+            } else {
+                task.status = "todo";
+            }
+
+            saveBoard();
+        }
+        // Remove a task
+        function removeTask(id) {
+            board = board.filter(task => task.id != id);
+            saveBoard();
+        }
+        // -------------------- DRAG & DROP --------------------
+        function setupDropZone(columnId, status) {
+            const column = document.getElementById(columnId);
+
+            column.addEventListener("dragover", event => {
+                event.preventDefault();
+            });
+
+            column.addEventListener("drop", event => {
+                event.preventDefault();
+
+                const id = event.dataTransfer.getData("id");
+                const task = board.find(task => task.id == id);
+
+                if (task) {
+                    task.status = status;
+                    saveBoard();
+                }
+            });
+        }
+        // -------------------- PROGRESS --------------------
+        function updateProgress() {
+            const total = board.length;
+
+            const completed = board.filter(
+                task => task.status === "done"
+            ).length;
+
+            const percentage = total
+                ? Math.round((completed / total) * 100)
+                : 0;
+
+            document.getElementById("totalProblems").textContent = total;
+            document.getElementById("completedProblems").textContent = completed;
+            document.getElementById("progressText").textContent =
+                percentage + "%";
+
+            document.getElementById("progressFill").style.width =
+                percentage + "%";
+        }
+        // -------------------- EVENT LISTENERS --------------------
+        document.getElementById("daySearch")
+            .addEventListener("input", renderDays);
+
+        document.getElementById("addDayButton")
+            .addEventListener("click", addSelectedDay);
+
+        document.getElementById("addCustomButton")
+            .addEventListener("click", addCustomTask);
+
+        // -------------------- START APPLICATION --------------------
+        setupDropZone("todoColumn", "todo");
+        setupDropZone("progressColumn", "progress");
+        setupDropZone("doneColumn", "done");
+
+        selectDay(1);
+        renderBoard();
+    </script>
+</body>
+</html>
